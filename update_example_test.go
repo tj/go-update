@@ -5,16 +5,11 @@ import (
 	"log"
 	"runtime"
 
-	"github.com/kierdavis/ansi"
-
 	"github.com/tj/go-update"
 	"github.com/tj/go-update/progress"
 )
 
 func Example() {
-	ansi.HideCursor()
-	defer ansi.ShowCursor()
-
 	// update apex(1) from apex/apex on github
 	p := &update.Project{
 		Command: "apex",
