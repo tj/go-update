@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/apex/log"
+	"github.com/c4milo/unpackit"
 	"github.com/google/go-github/github"
 	"github.com/pkg/errors"
 )
@@ -56,23 +57,50 @@ type Asset struct {
 	Downloads int    // Downloads count.
 }
 
-// Install binary by replacing the executable with `path`.
+// InstallTo binary to the given dir.
+func (p *Project) InstallTo(path, dir string) error {
+	log.Debugf("unpacking %q", path)
+
+	f, err := os.Open(path)
+	if err != nil {
+		return errors.Wrap(err, "opening tarball")
+	}
+
+	tmpdir, err := unpackit.Unpack(f, "")
+	if err != nil {
+		f.Close()
+		return errors.Wrap(err, "unpacking tarball")
+	}
+
+	if err := f.Close(); err != nil {
+		return errors.Wrap(err, "closing tarball")
+	}
+
+	bin := filepath.Join(tmpdir, p.Command)
+
+	if err := os.Chmod(bin, 0755); err != nil {
+		return errors.Wrap(err, "chmod")
+	}
+
+	dst := filepath.Join(dir, p.Command)
+
+	log.Debugf("move %q to %q", bin, dst)
+	if err := os.Rename(bin, dst); err != nil {
+		return errors.Wrap(err, "moving")
+	}
+
+	return nil
+}
+
+// Install binary to replace the current version.
 func (p *Project) Install(path string) error {
-	old, err := exec.LookPath(p.Command)
+	bin, err := exec.LookPath(p.Command)
 	if err != nil {
 		return errors.Wrapf(err, "looking up path of %q", p.Command)
 	}
 
-	if err := os.Chmod(path, 0755); err != nil {
-		return errors.Wrap(err, "chmod")
-	}
-
-	log.Debugf("replace %q", old)
-	if err := os.Rename(path, old); err != nil {
-		return errors.Wrapf(err, "replacing %q", p.Command)
-	}
-
-	return nil
+	dir := filepath.Dir(bin)
+	return p.InstallTo(path, dir)
 }
 
 // LatestReleases returns releases newer than Version, or nil.
@@ -100,12 +128,12 @@ func (p *Project) LatestReleases() (latest []*Release, err error) {
 	return
 }
 
-// Asset returns an asset matching os and arch, or nil.
-func (r *Release) Asset(os, arch string) *Asset {
-	s := fmt.Sprintf("%s_%s_%s", r.p.Command, os, arch)
+// FindTarball returns a tarball matching os and arch, or nil.
+func (r *Release) FindTarball(os, arch string) *Asset {
+	s := fmt.Sprintf("%s_%s", os, arch)
 	for _, a := range r.Assets {
-		name := strings.Replace(a.Name, filepath.Ext(a.Name), "", 1)
-		if s == name {
+		ext := filepath.Ext(a.Name)
+		if strings.Contains(a.Name, s) && ext == ".gz" {
 			return a
 		}
 	}

@@ -10,12 +10,12 @@ import (
 )
 
 func Example() {
-	// update apex(1) from apex/apex on github
+	// update polls(1) from tj/gh-polls on github
 	p := &update.Project{
-		Command: "apex",
-		Owner:   "apex",
-		Repo:    "apex",
-		Version: "0.13.1",
+		Command: "polls",
+		Owner:   "tj",
+		Repo:    "gh-polls",
+		Version: "0.0.3",
 	}
 
 	// fetch the new releases
@@ -34,7 +34,7 @@ func Example() {
 	latest := releases[0]
 
 	// find the asset for this system
-	a := latest.Asset(runtime.GOOS, runtime.GOARCH)
+	a := latest.FindTarball(runtime.GOOS, runtime.GOARCH)
 	if a == nil {
 		log.Println("no binary for your system")
 		return

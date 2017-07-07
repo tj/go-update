@@ -18,10 +18,10 @@ func TestProject_LatestReleases(t *testing.T) {
 		t.Parallel()
 
 		p := &Project{
-			Command: "apex",
-			Owner:   "apex",
-			Repo:    "apex",
-			Version: "0.13.1",
+			Command: "polls",
+			Owner:   "tj",
+			Repo:    "gh-polls",
+			Version: "0.0.3",
 		}
 
 		releases, err := p.LatestReleases()
@@ -33,17 +33,17 @@ func TestProject_LatestReleases(t *testing.T) {
 			versions = append(versions, r.Version)
 		}
 
-		assert.Equal(t, []string{"v0.15.0", "v0.14.0"}, versions)
+		assert.Equal(t, []string{"v0.1.1", "v0.1.0"}, versions)
 	})
 
 	t.Run("when new", func(t *testing.T) {
 		t.Parallel()
 
 		p := &Project{
-			Command: "apex",
-			Owner:   "apex",
-			Repo:    "apex",
-			Version: "v0.15.0",
+			Command: "polls",
+			Owner:   "tj",
+			Repo:    "gh-polls",
+			Version: "0.1.1",
 		}
 
 		releases, err := p.LatestReleases()
@@ -52,14 +52,14 @@ func TestProject_LatestReleases(t *testing.T) {
 	})
 }
 
-func TestRelease_Asset(t *testing.T) {
+func TestRelease_FindTarball(t *testing.T) {
 	t.Parallel()
 
 	p := &Project{
-		Command: "apex",
-		Owner:   "apex",
-		Repo:    "apex",
-		Version: "0.13.1",
+		Command: "polls",
+		Owner:   "tj",
+		Repo:    "gh-polls",
+		Version: "0.0.3",
 	}
 
 	releases, err := p.LatestReleases()
@@ -67,15 +67,15 @@ func TestRelease_Asset(t *testing.T) {
 	assert.NotNil(t, releases, "releases")
 	r := releases[0]
 
-	a := r.Asset("darwin", "386")
+	a := r.FindTarball("darwin", "amd64")
 	assert.NotNil(t, a, "nil for darwin")
-	assert.Equal(t, "apex_darwin_386", a.Name)
+	assert.Equal(t, "gh-polls_0.1.1_darwin_amd64.tar.gz", a.Name)
 
-	a = r.Asset("windows", "amd64")
+	a = r.FindTarball("windows", "amd64")
 	assert.NotNil(t, a, "nil for windows")
-	assert.Equal(t, "apex_windows_amd64.exe", a.Name)
+	assert.Equal(t, "gh-polls_0.1.1_windows_amd64.tar.gz", a.Name)
 
-	a = r.Asset("sloth", "amd64")
+	a = r.FindTarball("sloth", "amd64")
 	assert.Nil(t, a)
 }
 
@@ -83,10 +83,10 @@ func TestAsset_Download(t *testing.T) {
 	t.Parallel()
 
 	p := &Project{
-		Command: "apex",
-		Owner:   "apex",
-		Repo:    "apex",
-		Version: "0.13.1",
+		Command: "polls",
+		Owner:   "tj",
+		Repo:    "gh-polls",
+		Version: "0.0.3",
 	}
 
 	releases, err := p.LatestReleases()
@@ -94,7 +94,7 @@ func TestAsset_Download(t *testing.T) {
 	assert.NotNil(t, releases, "releases")
 	r := releases[0]
 
-	a := r.Asset("darwin", "386")
+	a := r.FindTarball("darwin", "amd64")
 	assert.NotNil(t, a, "nil for darwin")
 
 	path, err := a.Download()
@@ -106,10 +106,10 @@ func TestProject_Install(t *testing.T) {
 	t.Parallel()
 
 	p := &Project{
-		Command: "apex",
-		Owner:   "apex",
-		Repo:    "apex",
-		Version: "0.13.1",
+		Command: "polls",
+		Owner:   "tj",
+		Repo:    "gh-polls",
+		Version: "0.0.3",
 	}
 
 	releases, err := p.LatestReleases()
@@ -117,7 +117,7 @@ func TestProject_Install(t *testing.T) {
 	assert.NotNil(t, releases, "releases")
 	r := releases[0]
 
-	a := r.Asset("darwin", "386")
+	a := r.FindTarball("darwin", "amd64")
 	assert.NotNil(t, a, "nil for darwin")
 
 	path, err := a.Download()
