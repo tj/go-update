@@ -12,7 +12,7 @@ import (
 )
 
 func init() {
-	// log.SetLevel(log.DebugLevel)
+	log.SetLevel(log.DebugLevel)
 }
 
 func main() {
@@ -20,15 +20,17 @@ func main() {
 	defer ansi.ShowCursor()
 
 	// update polls(1) from tj/gh-polls on github
-	p := &update.Project{
+	m := &update.Manager{
 		Command: "polls",
-		Owner:   "tj",
-		Repo:    "gh-polls",
-		Version: "0.0.3",
+		Store: &update.Github{
+			Owner:   "tj",
+			Repo:    "gh-polls",
+			Version: "0.0.3",
+		},
 	}
 
 	// fetch the new releases
-	releases, err := p.LatestReleases()
+	releases, err := m.LatestReleases()
 	if err != nil {
 		log.Fatalf("error fetching releases: %s", err)
 	}
@@ -59,7 +61,7 @@ func main() {
 	}
 
 	// install it
-	if err := p.Install(tarball); err != nil {
+	if err := m.Install(tarball); err != nil {
 		log.Fatalf("error installing: %s", err)
 	}
 

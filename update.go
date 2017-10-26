@@ -3,7 +3,6 @@
 package update
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -17,7 +16,6 @@ import (
 
 	"github.com/apex/log"
 	"github.com/c4milo/unpackit"
-	"github.com/google/go-github/github"
 	"github.com/pkg/errors"
 )
 
@@ -31,17 +29,14 @@ var NopProxy = func(size int, r io.ReadCloser) io.ReadCloser {
 	return r
 }
 
-// Project represents the project.
-type Project struct {
+// Manager is the update manager.
+type Manager struct {
+	Store          // Store for releases such as Github or a custom private store.
 	Command string // Command is the executable's name.
-	Owner   string // Owner is the GitHub owner name.
-	Repo    string // Repo is the GitHub repo name.
-	Version string // Version is the local version.
 }
 
 // Release represents a project release.
 type Release struct {
-	p           *Project  // Project is the parent project.
 	Version     string    // Version is the release version.
 	Notes       string    // Notes is the markdown release notes.
 	URL         string    // URL is the notes url.
@@ -58,7 +53,7 @@ type Asset struct {
 }
 
 // InstallTo binary to the given dir.
-func (p *Project) InstallTo(path, dir string) error {
+func (m *Manager) InstallTo(path, dir string) error {
 	log.Debugf("unpacking %q", path)
 
 	f, err := os.Open(path)
@@ -76,13 +71,13 @@ func (p *Project) InstallTo(path, dir string) error {
 		return errors.Wrap(err, "closing tarball")
 	}
 
-	bin := filepath.Join(tmpdir, p.Command)
+	bin := filepath.Join(tmpdir, m.Command)
 
 	if err := os.Chmod(bin, 0755); err != nil {
 		return errors.Wrap(err, "chmod")
 	}
 
-	dst := filepath.Join(dir, p.Command)
+	dst := filepath.Join(dir, m.Command)
 
 	log.Debugf("move %q to %q", bin, dst)
 	if err := os.Rename(bin, dst); err != nil {
@@ -93,39 +88,14 @@ func (p *Project) InstallTo(path, dir string) error {
 }
 
 // Install binary to replace the current version.
-func (p *Project) Install(path string) error {
-	bin, err := exec.LookPath(p.Command)
+func (m *Manager) Install(path string) error {
+	bin, err := exec.LookPath(m.Command)
 	if err != nil {
-		return errors.Wrapf(err, "looking up path of %q", p.Command)
+		return errors.Wrapf(err, "looking up path of %q", m.Command)
 	}
 
 	dir := filepath.Dir(bin)
-	return p.InstallTo(path, dir)
-}
-
-// LatestReleases returns releases newer than Version, or nil.
-func (p *Project) LatestReleases() (latest []*Release, err error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	gh := github.NewClient(nil)
-
-	releases, _, err := gh.Repositories.ListReleases(ctx, p.Owner, p.Repo, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, r := range releases {
-		tag := r.GetTagName()
-
-		if tag == p.Version || "v"+p.Version == tag {
-			break
-		}
-
-		latest = append(latest, toRelease(p, r))
-	}
-
-	return
+	return m.InstallTo(path, dir)
 }
 
 // FindTarball returns a tarball matching os and arch, or nil.
@@ -186,26 +156,4 @@ func (a *Asset) DownloadProxy(proxy Proxy) (string, error) {
 
 	log.Debugf("copied")
 	return f.Name(), nil
-}
-
-// toRelease returns a Release.
-func toRelease(p *Project, r *github.RepositoryRelease) *Release {
-	out := &Release{
-		p:           p,
-		Version:     r.GetTagName(),
-		Notes:       r.GetBody(),
-		PublishedAt: r.GetPublishedAt().Time,
-		URL:         r.GetURL(),
-	}
-
-	for _, a := range r.Assets {
-		out.Assets = append(out.Assets, &Asset{
-			Name:      a.GetName(),
-			Size:      a.GetSize(),
-			URL:       a.GetBrowserDownloadURL(),
-			Downloads: a.GetDownloadCount(),
-		})
-	}
-
-	return out
 }
