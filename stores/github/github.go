@@ -1,21 +1,23 @@
-package update
+// Package github provides a GitHub release store.
+package github
 
 import (
 	"context"
 	"time"
 
 	"github.com/google/go-github/github"
+	"github.com/tj/go-update"
 )
 
-// Github store.
-type Github struct {
+// Store is the store implementation.
+type Store struct {
 	Owner   string
 	Repo    string
 	Version string
 }
 
 // LatestReleases returns releases newer than Version, or nil.
-func (s *Github) LatestReleases() (latest []*Release, err error) {
+func (s *Store) LatestReleases() (latest []*update.Release, err error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -33,15 +35,15 @@ func (s *Github) LatestReleases() (latest []*Release, err error) {
 			break
 		}
 
-		latest = append(latest, toRelease(r))
+		latest = append(latest, githubRelease(r))
 	}
 
 	return
 }
 
-// toRelease returns a Release.
-func toRelease(r *github.RepositoryRelease) *Release {
-	out := &Release{
+// githubRelease returns a Release.
+func githubRelease(r *github.RepositoryRelease) *update.Release {
+	out := &update.Release{
 		Version:     r.GetTagName(),
 		Notes:       r.GetBody(),
 		PublishedAt: r.GetPublishedAt().Time,
@@ -49,7 +51,7 @@ func toRelease(r *github.RepositoryRelease) *Release {
 	}
 
 	for _, a := range r.Assets {
-		out.Assets = append(out.Assets, &Asset{
+		out.Assets = append(out.Assets, &update.Asset{
 			Name:      a.GetName(),
 			Size:      a.GetSize(),
 			URL:       a.GetBrowserDownloadURL(),

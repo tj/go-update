@@ -9,6 +9,7 @@ import (
 
 	"github.com/tj/go-update"
 	"github.com/tj/go-update/progress"
+	"github.com/tj/go-update/stores/github"
 )
 
 func init() {
@@ -22,7 +23,7 @@ func main() {
 	// update polls(1) from tj/gh-polls on github
 	m := &update.Manager{
 		Command: "polls",
-		Store: &update.Github{
+		Store: &github.Store{
 			Owner:   "tj",
 			Repo:    "gh-polls",
 			Version: "0.0.3",
