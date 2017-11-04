@@ -38,7 +38,7 @@ type File struct {
 
 // LatestReleases returns releases newer than Version, or nil.
 func (s *Store) LatestReleases() (latest []*update.Release, err error) {
-	url := fmt.Sprintf("%s/releases/%s/%s", s.URL, s.Product, s.Plan)
+	url := fmt.Sprintf("%s/%s/%s", s.URL, s.Product, s.Plan)
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
