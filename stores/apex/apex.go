@@ -9,6 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/tj/go-update"
+	"github.com/tj/go/http/request"
 )
 
 // Store is the store implementation.
@@ -53,7 +54,7 @@ func (s *Store) LatestReleases() (latest []*update.Release, err error) {
 	defer res.Body.Close()
 
 	if res.StatusCode >= 400 {
-		return nil, errors.New(res.Status)
+		return nil, request.Error(res.StatusCode)
 	}
 
 	var releases []*Release
