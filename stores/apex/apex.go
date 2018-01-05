@@ -37,8 +37,42 @@ type File struct {
 	URL  string `json:"url"`
 }
 
+// GetRelease returns the specified release or ErrNotFound.
+func (s *Store) GetRelease(version string) (*update.Release, error) {
+	releases, err := s.releases()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, r := range releases {
+		if r.Version == version {
+			return r, nil
+		}
+	}
+
+	return nil, update.ErrNotFound
+}
+
 // LatestReleases returns releases newer than Version, or nil.
 func (s *Store) LatestReleases() (latest []*update.Release, err error) {
+	releases, err := s.releases()
+	if err != nil {
+		return
+	}
+
+	for _, r := range releases {
+		if r.Version == s.Version {
+			break
+		}
+
+		latest = append(latest, r)
+	}
+
+	return
+}
+
+// releases returns all releases.
+func (s *Store) releases() (all []*update.Release, err error) {
 	url := fmt.Sprintf("%s/%s/%s", s.URL, s.Product, s.Plan)
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -64,11 +98,7 @@ func (s *Store) LatestReleases() (latest []*update.Release, err error) {
 	}
 
 	for _, r := range releases {
-		if r.Version == s.Version {
-			break
-		}
-
-		latest = append(latest, toRelease(r))
+		all = append(all, toRelease(r))
 	}
 
 	return
