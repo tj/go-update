@@ -79,12 +79,33 @@ func (m *Manager) InstallTo(path, dir string) error {
 
 	dst := filepath.Join(dir, m.Command)
 
-	log.Debugf("move %q to %q", bin, dst)
-	if err := os.Rename(bin, dst); err != nil {
-		return errors.Wrap(err, "moving")
+	log.Debugf("copy %q to %q", bin, dst)
+
+	if err := copy(bin, dst); err != nil {
+		return errors.Wrap(err, "copy")
 	}
 
 	return nil
+}
+
+func copy(src, dst string) error {
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+
+	out, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, in)
+	if err != nil {
+		return err
+	}
+	return out.Close()
 }
 
 // Install binary to replace the current version.
