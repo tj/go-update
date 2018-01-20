@@ -83,7 +83,7 @@ func (m *Manager) InstallTo(path, dir string) error {
 
 	log.Debugf("copy %q to %q", bin, dst)
 
-	if err := fileutils.CopyFile(bin, dst); err != nil {
+	if err := fileutils.CopyFile(dst, bin); err != nil {
 		return errors.Wrap(err, "copy")
 	}
 
