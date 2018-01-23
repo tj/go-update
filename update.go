@@ -14,6 +14,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/fileutils"
+
 	"github.com/apex/log"
 	"github.com/c4milo/unpackit"
 	"github.com/pkg/errors"
@@ -79,9 +81,10 @@ func (m *Manager) InstallTo(path, dir string) error {
 
 	dst := filepath.Join(dir, m.Command)
 
-	log.Debugf("move %q to %q", bin, dst)
-	if err := os.Rename(bin, dst); err != nil {
-		return errors.Wrap(err, "moving")
+	log.Debugf("copy %q to %q", bin, dst)
+
+	if err := fileutils.CopyFile(dst, bin); err != nil {
+		return errors.Wrap(err, "copy")
 	}
 
 	return nil
