@@ -16,24 +16,27 @@ type Store struct {
 	Version string
 }
 
-// GetRelease returns the specified release or ErrNotFound.
+/*
+GetRelease returns the specified release or ErrNotFound.
+
+It tries to find a GitHub release with a tag matching the given version
+with "v" prefixed.
+
+If this first step fails, it tries to find a GitHub release with a tag matching
+exactly with the given version.
+*/
 func (s *Store) GetRelease(version string) (*update.Release, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	gh := github.NewClient(nil)
-
-	r, res, err := gh.Repositories.GetReleaseByTag(ctx, s.Owner, s.Repo, "v"+version)
-
-	if res.StatusCode == 404 {
-		return nil, update.ErrNotFound
-	}
+	r, err := getGithubReleaseByTag("v" + version)
 
 	if err != nil {
+		if _, ok := err.(*update.ErrNotFound); ok {
+			return getGithubReleaseByTag(version)
+		}
+
 		return nil, err
 	}
 
-	return githubRelease(r), nil
+	return r, nil
 }
 
 // LatestReleases returns releases newer than Version, or nil.
@@ -59,6 +62,26 @@ func (s *Store) LatestReleases() (latest []*update.Release, err error) {
 	}
 
 	return
+}
+
+// getGithubReleaseByTag returns the specified release or ErrNotFound.
+func getGithubReleaseByTag(tag string) (*update.Release, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	gh := github.NewClient(nil)
+
+	r, res, err := gh.Repositories.GetReleaseByTag(ctx, s.Owner, s.Repo, tag)
+
+	if res.StatusCode == 404 {
+		return nil, update.ErrNotFound
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return githubRelease(r), nil
 }
 
 // githubRelease returns a Release.
