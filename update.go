@@ -78,10 +78,16 @@ func (m *Manager) InstallTo(path, dir string) error {
 	}
 
 	dst := filepath.Join(dir, m.Command)
+	tmp := dst + ".tmp"
 
-	log.Debugf("move %q to %q", bin, dst)
-	if err := copyFile(dst, bin); err != nil {
-		return errors.Wrap(err, "moving")
+	log.Debugf("copy %q to %q", bin, tmp)
+	if err := copyFile(tmp, bin); err != nil {
+		return errors.Wrap(err, "copying")
+	}
+
+	log.Debugf("renaming %q to %q", bin, dst)
+	if err := os.Rename(dst, tmp); err != nil {
+		return errors.Wrap(err, "renaming")
 	}
 
 	return nil
