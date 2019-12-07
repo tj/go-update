@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"crypto/sha256"
 	"github.com/apex/log"
 	"github.com/c4milo/unpackit"
 	"github.com/pkg/errors"
@@ -31,8 +32,9 @@ var NopProxy = func(size int, r io.ReadCloser) io.ReadCloser {
 
 // Manager is the update manager.
 type Manager struct {
-	Store          // Store for releases such as Github or a custom private store.
-	Command string // Command is the executable's name.
+	Store           // Store for releases such as Github or a custom private store.
+	Command  string // Command is the executable's name.
+	Checksum string // Checksum is the checksum of the file
 }
 
 // Release represents a project release.
@@ -75,6 +77,27 @@ func (m *Manager) InstallTo(path, dir string) error {
 
 	if err := os.Chmod(bin, 0755); err != nil {
 		return errors.Wrap(err, "chmod")
+	}
+
+	// If checksum is initialized check the file
+	if m.Checksum != "" {
+		f, errF := os.Open(bin)
+		if errF != nil {
+			errors.Wrap(errF, "Opening file for checksum")
+		}
+		defer f.Close()
+
+		h := sha256.New()
+		if _, errF := io.Copy(h, f); errF != nil {
+			errors.Wrap(errF, "Copying file to writer for checksum")
+		}
+
+		s := fmt.Sprintf("%x", h.Sum(nil))
+		strComp := strings.Compare(s, m.Checksum)
+		log.Debugf("|%s| \n|%s| \n Match: %t\n", s, m.Checksum, strComp == 0)
+		if strComp != 0 {
+			log.Fatal("Checksum not valid")
+		}
 	}
 
 	dst := filepath.Join(dir, m.Command)
