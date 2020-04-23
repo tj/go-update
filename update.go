@@ -85,7 +85,7 @@ func (m *Manager) InstallTo(path, dir string) error {
 		return errors.Wrap(err, "copying")
 	}
 
-	log.Debugf("renaming %q to %q", bin, dst)
+	log.Debugf("renaming %q to %q", tmp, dst)
 	if err := os.Rename(tmp, dst); err != nil {
 		return errors.Wrap(err, "renaming")
 	}
