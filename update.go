@@ -117,6 +117,19 @@ func (r *Release) FindTarball(os, arch string) *Asset {
 	return nil
 }
 
+// FindZip returns a zipfile matching os and arch, or nil.
+func (r *Release) FindZip(os, arch string) *Asset {
+	s := fmt.Sprintf("%s_%s", os, arch)
+	for _, a := range r.Assets {
+		ext := filepath.Ext(a.Name)
+		if strings.Contains(a.Name, s) && ext == ".zip" {
+			return a
+		}
+	}
+
+	return nil
+}
+
 // Download the asset to a tmp directory and return its path.
 func (a *Asset) Download() (string, error) {
 	return a.DownloadProxy(NopProxy)
