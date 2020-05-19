@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -84,14 +85,14 @@ func (m *Manager) InstallTo(path, dir string) error {
 	if err := copyFile(tmp, bin); err != nil {
 		return errors.Wrap(err, "copying")
 	}
-	
+
 	if runtime.GOOS == "windows" {
 		old := dst + ".old"
 		log.Debugf("windows workaround renaming %q to %q", dst, old)
 		if err := os.Rename(dst, old); err != nil {
 			return errors.Wrap(err, "windows renaming")
 		}
-	}	
+	}
 
 	log.Debugf("renaming %q to %q", tmp, dst)
 	if err := os.Rename(tmp, dst); err != nil {
