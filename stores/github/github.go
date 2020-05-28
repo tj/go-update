@@ -16,6 +16,8 @@ type Store struct {
 	Version string
 }
 
+type version []int64
+
 // GetRelease returns the specified release or ErrNotFound.
 func (s *Store) GetRelease(version string) (*update.Release, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -48,10 +50,11 @@ func (s *Store) LatestReleases() (latest []*update.Release, err error) {
 		return nil, err
 	}
 
+	vsn := parseVersion(s.Version)
 	for _, r := range releases {
-		tag := r.GetTagName()
+		tag := parseVersion(r.GetTagName())
 
-		if tag == s.Version || "v"+s.Version == tag {
+		if vsn.biggerEquals(tag) {
 			break
 		}
 
@@ -80,4 +83,40 @@ func githubRelease(r *github.RepositoryRelease) *update.Release {
 	}
 
 	return out
+}
+
+func parseVersion(vsn string) version {
+	vsn = strings.TrimLeft(vsn, "v")
+	vsn = strings.ReplaceAll(vsn, "-", ".")
+	parts := strings.Split(vsn, ".")
+	ret := make(version, len(parts))
+	for n, p := range parts {
+		i, err := strconv.ParseInt(p, 10, 64)
+		if err != nil {
+			i = 0
+		}
+		ret[n] = i
+	}
+	return ret
+}
+
+func (vsn version) at(pos int) int64 {
+	if len(vsn) <= pos {
+		return 0
+	}
+	return vsn[pos]
+}
+
+func (vsn version) biggerEquals(other version) bool {
+	maximum := len(vsn)
+	if len(other) > maximum {
+		maximum = len(other)
+	}
+	for i := 0; i <= maximum; i++ {
+		if vsn.at(i) == other.at(i) {
+			continue
+		}
+		return vsn.at(i) > other.at(i)
+	}
+	return true
 }
